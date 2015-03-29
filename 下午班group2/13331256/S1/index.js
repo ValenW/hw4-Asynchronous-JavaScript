@@ -5,19 +5,11 @@
  * @Email   : ValenW@qq.com
  * @Date    : 2015-03-25 22:07:20
  * @Last Modified by:   ValenW
- * @Last Modified time: 2015-03-28 18:14:10
+ * @Last Modified time: 2015-03-29 09:49:41
  */
 
 function $(id) {
     return document.getElementById(id);
-}
-
-function $t(tag) {
-    return document.getElementsByTagName(tag);
-}
-
-function $n(name) {
-    return document.getElementsByName(name);
 }
 
 function $c(classname) {
@@ -25,20 +17,13 @@ function $c(classname) {
 }
 
 function ajax(url, fnSucc, fnFaild) {
-    //1.创建对象
-    var oAjax = new XMLHttpRequest();
-
-    //2.连接服务器  
-    oAjax.open('GET', url, true);
-      
-    //3.发送请求  
-    oAjax.send();
-
-    //4.接收返回
-    oAjax.onreadystatechange = function() {  //OnReadyStateChange事件
-        if(oAjax.readyState == 4)  //4为完成
-            if(oAjax.status == 200)    //200为成功
-                fnSucc(oAjax.responseText);
+    var Ajax = new XMLHttpRequest();
+    Ajax.open('GET', url, true);
+    Ajax.send();
+    Ajax.onreadystatechange = function() {
+        if(Ajax.readyState == 4)
+            if(Ajax.status == 200)
+                fnSucc(Ajax.responseText);
             else if(fnFaild)
                     fnFaild();
     };
@@ -48,18 +33,19 @@ window.onload = function() {
     var oButton = $c("button");
     for (var i = 0; i < oButton.length; i++)
         oButton[i].onclick = buttonClick;
-    $("at-plus-container").addEventListener('mouseleave', reset);
+
+    $("at-plus-container").onmouseleave = reset;
 }
 
 function buttonClick() {
+    if (this.classList.contains("disable")) return;
     var oButton = $c("button");
-    for (var i = 0; i < oButton.length; i++) {
-        if (oButton[i].className != this.className) {
-            oButton[i].className += " nopress";
-            oButton[i].onclick = null;
-        }
-    }
-    this.childNodes[1].className = "unread wait";
+    for (var i = 0; i < oButton.length; i++)
+        if (oButton[i] !== this)
+            oButton[i].classList.add("disable");
+
+    this.childNodes[1].classList.remove("hide");
+    this.childNodes[1].classList.add("wait");
     this.childNodes[1].innerHTML = "...";
 
     ajax("../", getSucc, getFail);
@@ -70,27 +56,27 @@ function bigButtonClick() {
     var sum = 0;
     for (var i = 0; i < oUnread.length; i++)
         sum += parseInt(oUnread[i].innerHTML);
+
     $("sum").innerHTML = sum;
-    this.className = "nopress";
+    this.className = "disable";
 }
 
 function getSucc(resp) {
-    var waitB = $c("wait")[0].parentNode;
+    var waitButton = $c("wait")[0].parentNode;
     var oButton = $c("button");
-    for (var i = 0; i < oButton.length; i++) {
-        if (oButton[i].className != waitB.className) {
-            oButton[i].className = oButton[i].className.replace(/ nopress/g, "");
+    for (var i = 0; i < oButton.length; i++)
+        if (oButton[i] != waitButton) {
+            oButton[i].classList.remove("disable");
             oButton[i].onclick = buttonClick;
         }
-    }
-    waitB.childNodes[1].className = "unread";
-    waitB.childNodes[1].innerHTML = resp;
-    waitB.className += " nopress";
-    waitB.onclick = null;
+
+    waitButton.childNodes[1].classList.remove("wait");
+    waitButton.childNodes[1].innerHTML = resp;
+    waitButton.classList.add("disable");
 
     var oUnread = $c("unread hide");
     if (oUnread.length == 0) {
-        $("info-bar").className = "press";
+        $("info-bar").className = "able";
         $("info-bar").onclick = bigButtonClick;
     }
 }
@@ -101,13 +87,14 @@ function getFail() {
 
 function reset() {
     $("sum").innerHTML = "";
-    $("info-bar").className = "nopress";
+    $("info-bar").className = "disable";
     var oUnread = $c("unread");
     for (var i = 0; i < oUnread.length; i++)
-        oUnread[i].className = "unread hide";
+        oUnread[i].classList.add('hide');
+
     var oButton = $c("button");
     for (var i = 0; i < oButton.length; i++) {
-        oButton[i].className = oButton[i].className.replace(/ nopress/g, "");
+        oButton[i].classList.remove("disable");
         oButton[i].onclick = buttonClick;
     }
 }

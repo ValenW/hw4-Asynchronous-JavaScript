@@ -5,59 +5,54 @@
  * @Email   : ValenW@qq.com
  * @Date    : 2015-03-25 22:07:20
  * @Last Modified by:   ValenW
- * @Last Modified time: 2015-03-28 18:34:42
+ * @Last Modified time: 2015-03-29 11:11:10
  */
 
 function $(id) {
     return document.getElementById(id);
 }
 
-function $t(tag) {
-    return document.getElementsByTagName(tag);
-}
-
-function $n(name) {
-    return document.getElementsByName(name);
-}
-
 function $c(classname) {
     return document.getElementsByClassName(classname);
 }
 
-function ajax(url, fnSucc, fnFaild) {
-    var oAjax = new XMLHttpRequest();
-    oAjax.open('GET', url, true);
-    oAjax.send();
-
-    oAjax.onreadystatechange = function() {  //OnReadyStateChange事件
-        if(oAjax.readyState == 4)  //4为完成
-            if(oAjax.status == 200)    //200为成功
-                fnSucc(oAjax.responseText);
+function ajax(url, fnSucc, fnFaild, fnThen) {
+    var Ajax = new XMLHttpRequest();
+    Ajax.open('GET', url, true);
+    Ajax.send();
+    Ajax.onreadystatechange = function() {
+        if(Ajax.readyState == 4)
+            if(Ajax.status == 200)
+                fnSucc(Ajax.responseText, fnThen);
             else if(fnFaild)
                     fnFaild();
     };
+    globalAjax = Ajax;
 }
 
 window.onload = function() {
     var oButton = $c("button");
     for (var i = 0; i < oButton.length; i++)
         oButton[i].onclick = buttonClick;
-    $("at-plus-container").onclick = robot;
-    $("bottom-positioner").addEventListener('mouseleave', reset);
+
+    $("at-plus-container").onmouseleave = reset;
+    $c("apb")[0].onclick = robot;
+
+    globalAjax = null;
 }
 
-function buttonClick() {
+function buttonClick(fnThen) {
+    if (this.classList.contains("disable")) return;
     var oButton = $c("button");
-    for (var i = 0; i < oButton.length; i++) {
-        if (oButton[i].className != this.className) {
-            oButton[i].className += " nopress";
-            // oButton[i].onclick = null;
-        }
-    }
-    this.childNodes[1].className = "unread wait";
+    for (var i = 0; i < oButton.length; i++)
+        if (oButton[i] !== this)
+            oButton[i].classList.add("disable");
+
+    this.childNodes[1].classList.remove("hide");
+    this.childNodes[1].classList.add("wait");
     this.childNodes[1].innerHTML = "...";
 
-    ajax("../", getSucc, getFail);
+    ajax("../", getSucc, getFail, fnThen);
 }
 
 function bigButtonClick() {
@@ -65,31 +60,30 @@ function bigButtonClick() {
     var sum = 0;
     for (var i = 0; i < oUnread.length; i++)
         sum += parseInt(oUnread[i].innerHTML);
+
     $("sum").innerHTML = sum;
-    this.className = "nopress";
+    this.className = "disable";
 }
 
-function getSucc(resp) {
-    var waitB = $c("wait")[0].parentNode;
-    var id = parseInt(waitB.id.slice(1));
+function getSucc(resp, fnThen) {
+    var waitButton = $c("wait")[0].parentNode;
     var oButton = $c("button");
-    for (var i = 0; i < oButton.length; i++) {
-        if (oButton[i].className != waitB.className) {
-            oButton[i].className = oButton[i].className.replace(/ nopress/g, "");
+    for (var i = 0; i < oButton.length; i++)
+        if (oButton[i] != waitButton) {
+            oButton[i].classList.remove("disable");
             oButton[i].onclick = buttonClick;
         }
-    }
-    waitB.childNodes[1].className = "unread";
-    waitB.childNodes[1].innerHTML = resp;
-    waitB.className += " nopress";
-    waitB.onclick = null;
+
+    waitButton.childNodes[1].classList.remove("wait");
+    waitButton.childNodes[1].innerHTML = resp;
+    waitButton.classList.add("disable");
 
     var oUnread = $c("unread hide");
     if (oUnread.length == 0) {
-        $("info-bar").className = "press";
+        $("info-bar").className = "able";
         $("info-bar").onclick = bigButtonClick;
-        $("info-bar").click();
     }
+    if (typeof(fnThen) == "function") fnThen();
 }
 
 function getFail() {
@@ -97,32 +91,40 @@ function getFail() {
 }
 
 function reset() {
-    if (parseInt($("at-plus-container").clientWidth) > 41) return;
+    if (globalAjax != null) globalAjax.abort();
+    $c("click-sequ")[0].innerHTML = "";
     $("sum").innerHTML = "";
-    $("info-bar").className = "nopress";
+    $("info-bar").className = "disable";
     var oUnread = $c("unread");
     for (var i = 0; i < oUnread.length; i++)
         oUnread[i].className = "unread hide";
+
     var oButton = $c("button");
     for (var i = 0; i < oButton.length; i++) {
-        oButton[i].className = oButton[i].className.replace(/ nopress/g, "");
+        oButton[i].classList.remove("disable");
         oButton[i].onclick = buttonClick;
-        $("info-bar").onclick = bigButtonClick;
     }
-    if (id == 5) $("info-bar").click();
 }
 
-function robot(num) {
-    if (typeof(num) != "number") {
-        reset();
-        var o = [1, 2, 3, 4, 5];
-        o.sort(function() {return Math.random() - 0.5;});
-        var s = "";
-        for (var i = 0; i < 5; i++) s += String.fromCharCode(o[i] + 64);
-        $c("order")[0].innerHTML = s;
-        $("b" + o[0]).click();
-    } else {
-        $("b" + o[num]).click();
-    }
-    
+function robot() {
+    reset();
+    var oButton = $c("button");
+    var clickSequ = [0, 1, 2, 3, 4];
+    clickSequ.sort(function() { return Math.random() - 0.5; });
+
+    var sequString = "";
+    for (i in clickSequ) sequString += String.fromCharCode(clickSequ[i] + 65);
+    $c('click-sequ')[0].innerHTML = sequString;
+
+    buttonClick.call(oButton[clickSequ[0]], function () {
+        buttonClick.call(oButton[clickSequ[1]], function () {
+            buttonClick.call(oButton[clickSequ[2]], function () {
+                buttonClick.call(oButton[clickSequ[3]], function () {
+                    buttonClick.call(oButton[clickSequ[4]], function () {
+                        bigButtonClick.call($("info-bar"));
+                    });
+                });
+            });
+        });
+    });
 }

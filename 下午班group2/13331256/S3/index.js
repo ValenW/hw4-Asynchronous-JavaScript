@@ -5,7 +5,7 @@
  * @Email   : ValenW@qq.com
  * @Date    : 2015-03-25 22:07:20
  * @Last Modified by:   ValenW
- * @Last Modified time: 2015-03-29 11:53:27
+ * @Last Modified time: 2015-03-29 12:05:31
  */
 
 function $(id) {
@@ -96,6 +96,7 @@ function reset() {
     $c("click-sequ")[0].innerHTML = "";
     $("sum").innerHTML = "";
     $("info-bar").className = "disable";
+    $("info-bar").onclick = null;
     var oUnread = $c("unread");
     for (var i = 0; i < oUnread.length; i++)
         oUnread[i].className = "unread hide";
